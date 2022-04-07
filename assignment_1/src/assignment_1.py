@@ -48,7 +48,7 @@ def compute_cost(X, Y, W, b, lambda_val):
     P = evaluate_classifier(X, W, b)
     regularization_term = lambda_val*np.sum(np.square(W))
     D = X.shape[1]
-    cross_loss = np.trace(-np.dot(np.transpose(Y), np.log(P)))
+    cross_loss = np.trace(-np.matmul(np.log(P),np.transpose(Y)))
     return 1/D * cross_loss + regularization_term
 
 def compute_accuracy(X, y, W, b):
@@ -103,8 +103,6 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b,
     validation_loss = []
     
     for epoch in tqdm(range(n_epochs)):
-        training_loss_epoch = 0
-        validation_loss_epoch = 0
         # From 0 to the total length of the data set. n_batch makes "batch" increase by n_batch (batch size) for each iteration.
         for batch in range(0, total_length, n_batch):
             max_batch_idx = batch+n_batch
@@ -117,9 +115,9 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b,
             b -= eta*grad_b
 
         """ Weight decay """
-        if epoch%10 == 0 and epoch!=0 and False:
+        if epoch%10 == 0 and epoch!=0:
             eta = .1*eta
-            tqdm.write('Weight decay performed.. eta is now {}'.format(eta)) 
+            tqdm.write('Step decay performed.. eta is now {}'.format(eta)) 
                   
         training_accuracy.append(compute_accuracy(X, y, W, b))
         training_loss.append(compute_cost(X, Y, W, b, lambda_val))
@@ -127,7 +125,7 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b,
         validation_loss.append(compute_cost(X_val, Y_val, W, b, lambda_val)) 
     return W, b, training_accuracy, training_loss, validation_accuracy, validation_loss
 
-def plot_training_validation(training, validation=None, labels=['Train', 'Validation'], plot_accuracy=True):
+def plot_training_validation(training, validation=None, labels=['Train', 'Validation'], plot_accuracy=True, save_file=False, file_name=''):
     if plot_accuracy:
         plotting = 'Accuracy'
     else:
@@ -140,6 +138,8 @@ def plot_training_validation(training, validation=None, labels=['Train', 'Valida
     plt.legend()
     plt.xlabel("Epochs")
     plt.ylabel(plotting)
+    if save_file:
+        plt.savefig(file_name)
     plt.show()
 
 
@@ -165,40 +165,9 @@ if __name__ == '__main__':
     validation_Y = train_Y5[9000:]
     validation_encoded_Y = train_encoded_Y5[:,9000:]
 
-    train_x, train_Y, train_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_1')
+    """train_x, train_Y, train_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_1')
     validation_x, validation_Y, validation_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_2')
-    test_x, test_Y, test_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_3')
-
-    #print(train_x.shape, train_x.shape, train_encoded_Y.shape, validation_x.shape, validation_Y.shape, validation_encoded_Y.shape)
-
-    """x = np.empty((3072,), dtype=int)
-    Y = np.empty((3072,), dtype=int)
-    encoded_Y = np.empty((3072,), dtype=int)
-
-    print(x.shape)
-
-    for dataset in datasets:
-        train_x1, train_Y1, train_encoded_Y1 = load_batch(dataset)
-        x = np.append(x, train_x1)
-        Y = np.append(Y, train_Y1)
-        encoded_Y = np.append(encoded_Y, train_encoded_Y1)
-    
-    x = np.reshape(x, (3072,50001))
-    Y = np.reshape(Y, (3072,50001))
-    encoded_Y = np.reshape(encoded_Y, (3072,50001))
-
-    x = np.delete(x, 0)
-    Y = np.delete(Y, 0)
-    encoded_Y = np.delete(encoded_Y, 0)
-    print(x.shape)
-    
-    train_x = x[:,:9000]
-    train_Y = Y[:,:9000]
-    train_encoded_Y = encoded_Y[:,:9000]
-
-    validation_x = x[:,9000:-1]
-    validation_Y = Y[:,9000:-1]
-    validation_encoded_Y = encoded_Y[:,9000:-1]"""
+    test_x, test_Y, test_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_3')"""
 
     train_normalized = normalize_data(train_x)
     validation_normalized = normalize_data(validation_x)
@@ -207,31 +176,50 @@ if __name__ == '__main__':
 
     W, b = init_params((10,3072))
 
-    g_W,g_b=compute_grads_num(train_normalized[:,:50], train_encoded_Y[:,:50], W, b, 0)
+    """g_W,g_b=compute_grads_num(train_normalized[:,:50], train_encoded_Y[:,:50], W, b, 0)
     G_W,G_b=compute_gradients(train_normalized, train_encoded_Y, W, b, 0)
     comparison = compare_computed_gradients(g_b, G_b)
     if comparison:
         print('Returned true. Gradients have produced the same result')
     else:
-        print('Failed..')
-    lambda_val = .1
-    eta = .001
-    W, b, training_accuracy, training_loss, validation_accuracy, validation_loss = gradient_descent(train_normalized, 
-                                                                                                    train_encoded_Y, 
-                                                                                                    train_Y, 
-                                                                                                    validation_normalized, 
-                                                                                                    validation_encoded_Y, 
-                                                                                                    validation_Y, 
-                                                                                                    n_batch=100, 
-                                                                                                    eta=eta, 
-                                                                                                    n_epochs=40, 
-                                                                                                    W=W, 
-                                                                                                    b=b, 
-                                                                                                    lambda_val=lambda_val, 
-                                                                                                    allow_flipping=False)
+        print('Failed..')"""
+    lambda_vals = [.1, 1., 2]
+    etas = [0.1, .001]
+    n_batches = [10, 100, 200]
+    for lambda_val in lambda_vals:
+        for eta in etas:
+            for n_batch in n_batches:
+                W, b, training_accuracy, training_loss, validation_accuracy, validation_loss = gradient_descent(train_normalized, 
+                                                                                                                train_encoded_Y, 
+                                                                                                                train_Y, 
+                                                                                                                validation_normalized, 
+                                                                                                                validation_encoded_Y, 
+                                                                                                                validation_Y, 
+                                                                                                                n_batch=n_batch, 
+                                                                                                                eta=eta, 
+                                                                                                                n_epochs=40, 
+                                                                                                                W=W, 
+                                                                                                                b=b, 
+                                                                                                                lambda_val=lambda_val, 
+                                                                                                                allow_flipping=True)
 
-    plot_training_validation(training_accuracy, validation_accuracy, plot_accuracy=True)
-    plot_training_validation(training_loss, validation_loss, plot_accuracy=False)
-    montage(W)
+                
+                
+                acc_file_name = '../figures_grid_search/accuracy_lb_{}_eta_{}_batch_{}.png'.format(str(eta).replace('.','dot'),str(lambda_val).replace('.','dot'),n_batch)
+                loss_file_name = '../figures_grid_search/loss_lb_{}_eta_{}_batch_{}.png'.format(eta,lambda_val,n_batch)
+                plot_training_validation(training_accuracy, 
+                                        validation_accuracy, 
+                                        plot_accuracy=True,
+                                        save_file=True,
+                                        file_name=acc_file_name)
+                print('Saved accuracy plot as: {}'.format(acc_file_name))
+                plot_training_validation(training_loss, 
+                                        validation_loss, 
+                                        plot_accuracy=False,
+                                        save_file=True,
+                                        file_name=loss_file_name)
+                print('Saved loss plot as: {}'.format(loss_file_name))
+                montage(W)
+                _continue = input('Press enter to continue')
 
-    print('Test accuracy: ' + str(compute_accuracy(test_x, test_Y, W, b)))
+    #print('Test accuracy: ' + str(compute_accuracy(test_x, test_Y, W, b)))
