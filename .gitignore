@@ -1,3 +1,5 @@
-assignment_1/Datasets/
-assignment_2/Datasets/
+assignment_1/Datasets/cifar-10-batches-py/
+assignment_1/Datasets/cifar-10-python.tar.gz
+assignment_2/Datasets/cifar-10-batches-py/
+assignment_2/Datasets/cifar-10-python.tar.gz
 *.pyc
