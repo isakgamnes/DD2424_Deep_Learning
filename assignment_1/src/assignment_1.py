@@ -95,7 +95,7 @@ def compare_computed_gradients(ga, gn, eps=1**(-7)):
         return True
     return False
 
-def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b, lambda_val, allow_flipping=False):
+def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b, lambda_val, allow_flipping=False, step_decay=False):
     total_length = X.shape[1]
     training_accuracy = []
     training_loss = []
@@ -115,7 +115,7 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W, b,
             b -= eta*grad_b
 
         """ Weight decay """
-        if epoch%10 == 0 and epoch!=0:
+        if epoch%10 == 0 and epoch!=0 and step_decay:
             eta = .1*eta
             tqdm.write('Step decay performed.. eta is now {}'.format(eta)) 
                   
@@ -165,27 +165,14 @@ if __name__ == '__main__':
     validation_Y = train_Y5[9000:]
     validation_encoded_Y = train_encoded_Y5[:,9000:]
 
-    """train_x, train_Y, train_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_1')
-    validation_x, validation_Y, validation_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_2')
-    test_x, test_Y, test_encoded_Y = load_batch('../Datasets/cifar-10-batches-py/data_batch_3')"""
-
     train_normalized = normalize_data(train_x)
     validation_normalized = normalize_data(validation_x)
 
-    print(train_normalized.shape)
-
     W, b = init_params((10,3072))
 
-    """g_W,g_b=compute_grads_num(train_normalized[:,:50], train_encoded_Y[:,:50], W, b, 0)
-    G_W,G_b=compute_gradients(train_normalized, train_encoded_Y, W, b, 0)
-    comparison = compare_computed_gradients(g_b, G_b)
-    if comparison:
-        print('Returned true. Gradients have produced the same result')
-    else:
-        print('Failed..')"""
-    lambda_vals = [.1, 1., 2]
-    etas = [0.1, .001]
-    n_batches = [10, 100, 200]
+    lambda_vals = [1.]
+    etas = [0.1]
+    n_batches = [10]
     for lambda_val in lambda_vals:
         for eta in etas:
             for n_batch in n_batches:
@@ -201,7 +188,8 @@ if __name__ == '__main__':
                                                                                                                 W=W, 
                                                                                                                 b=b, 
                                                                                                                 lambda_val=lambda_val, 
-                                                                                                                allow_flipping=True)
+                                                                                                                allow_flipping=False,
+                                                                                                                step_decay=True)
 
                 
                 
@@ -221,5 +209,3 @@ if __name__ == '__main__':
                 print('Saved loss plot as: {}'.format(loss_file_name))
                 montage(W)
                 _continue = input('Press enter to continue')
-
-    #print('Test accuracy: ' + str(compute_accuracy(test_x, test_Y, W, b)))
