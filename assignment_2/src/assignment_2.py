@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from sklearn.metrics import precision_score, accuracy_score
 import matplotlib.pyplot as plt
@@ -37,14 +38,14 @@ def normalize_data(data):
 
 def init_params(size, mean=0, std_dev=0.01):
     W = np.random.normal(mean, std_dev, size)
-    b = np.random.normal(mean, std_dev, (size[0],1))
+    b = np.zeros((size[0],1))
     return W,b
 
-def evaluate_classifier(X, W, b):
+def evaluate_classifier(X, W: list, b: list):
     s1 = np.dot(W[0], X) + b[:,0]               # Change W to use weight layer 1
     h = np.max(0,s1)
     s2 = np.dot(W[1], h) + b[:,1]               # Change W to use weight layer 2
-    return np.exp(s2)/np.sum(np.exp(s2), axis=0)
+    return np.exp(s2)/np.sum(np.exp(s2), axis=0)    # P
 
 def compute_cost(X, Y, W, b, lambda_val):
     P = evaluate_classifier(X, W, b)
@@ -146,35 +147,33 @@ def plot_training_validation(training, validation=None, labels=['Train', 'Valida
 
 
 if __name__ == '__main__':
-    datasets = ['../Datasets/cifar-10-batches-py/data_batch_1',
+    # Index for test set in the list of data sets 
+    test_idx = 0
+    # Add all datasets and test set urls for easy access later
+    # The training set is at idx 0, so that the indexes correspond to the batch number for the other data sets
+    datasets = ['../Datasets/cifar-10-batches-py/test_batch',
+                '../Datasets/cifar-10-batches-py/data_batch_1',
                 '../Datasets/cifar-10-batches-py/data_batch_2',
                 '../Datasets/cifar-10-batches-py/data_batch_3',
                 '../Datasets/cifar-10-batches-py/data_batch_4',
                 '../Datasets/cifar-10-batches-py/data_batch_5'
                 ]
 
-    train_x1, train_Y1, train_encoded_Y1 = load_batch(datasets[0])
-    train_x2, train_Y2, train_encoded_Y2 = load_batch(datasets[1])
-    train_x3, train_Y3, train_encoded_Y3 = load_batch(datasets[2])
-    train_x4, train_Y4, train_encoded_Y4 = load_batch(datasets[3])
-    train_x5, train_Y5, train_encoded_Y5 = load_batch(datasets[4])
+    # Extract the input and ouput data, as well as the one hot encoded output from each data set.
+    training_x, training_y, training_encoded = load_batch(datasets[1])
+    validation_x, validation_y, validation_encoded = load_batch(datasets[2])    
+    test_x, test_y, test_encoded = load_batch(datasets[test_idx])
 
-    train_x = np.concatenate((train_x1, train_x2, train_x3, train_x4, train_x5[:,:9000]), axis=1)                                             
-    train_Y = np.concatenate((train_Y1, train_Y2, train_Y3, train_Y4, train_Y5[:9000]), axis=0)                                               
-    train_encoded_Y = np.concatenate((train_encoded_Y1, train_encoded_Y2, train_encoded_Y3, train_encoded_Y4, train_encoded_Y5[:,:9000]), axis=1)     
+    # Normalize the data
+    training_x_norm = normalize_data(training_x)
+    validation_x_norm = normalize_data(validation_x)
+    test_x_norm = normalize_data(test_x)
 
-    validation_x = train_x5[:,9000:]
-    validation_Y = train_Y5[9000:]
-    validation_encoded_Y = train_encoded_Y5[:,9000:]
+    print(training_encoded.shape)
 
-    train_normalized = normalize_data(train_x)
-    validation_normalized = normalize_data(validation_x)
-
-    W, b = init_params((10,3072))
-
-    lambda_vals = [1.]
-    etas = [0.1]
-    n_batches = [10]
+    w1, b1 = init_params((training_x.shape[0], training_encoded.shape[0]), std_dev=1/np.sqrt(training_x.shape[0]))
+    
+    print(w1.shape, b1.shape)
     """for lambda_val in lambda_vals:
         for eta in etas:
             for n_batch in n_batches:
