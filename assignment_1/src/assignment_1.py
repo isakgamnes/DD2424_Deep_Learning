@@ -63,7 +63,7 @@ def compute_gradients(X, Y, W, b, lambda_val):
     grad_b = np.dot(batch_gradient,np.ones((D,1))) / D
     return grad_W, grad_b
 
-def compute_grads_num(X, Y, W, b, lambda_val, h=1**(-6)):
+def compute_grads_num(X, Y, W, b, lambda_val, h=10**(-6)):
     no = W.shape[0]
     d = X.shape[0]
 
@@ -86,7 +86,7 @@ def compute_grads_num(X, Y, W, b, lambda_val, h=1**(-6)):
             grad_W[i,j] = (c2-c) / h
     return grad_W, grad_b
 
-def compare_computed_gradients(ga, gn, eps=1**(-7)):
+def compare_computed_gradients(ga, gn, eps=10**(-7)):
     # Default eps value comes from the Standford’s course Convolutional Neural Networks for Visual Recognition recommendation 
     # https://cs231n.github.io/neural-networks-3/#gradcheck
     relative_error = np.abs(ga - gn).sum()
@@ -169,6 +169,7 @@ if __name__ == '__main__':
     validation_normalized = normalize_data(validation_x)
 
     W, b = init_params((10,3072))
+    print(W.shape, b.shape)
 
     lambda_vals = [1.]
     etas = [0.1]
