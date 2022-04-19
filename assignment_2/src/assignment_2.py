@@ -7,7 +7,7 @@ from tqdm import tqdm
 from random import randint
 from numba import cuda
 import math
-
+import pandas as pd
 def load_batch(file):
     """ Copied from: https://www.cs.toronto.edu/~kriz/cifar.html """
     with open(file, 'rb') as fo:
@@ -32,16 +32,12 @@ def montage(images, rows=2, cols=5):
 			ax[i][j].axis('off')
 	plt.show()
 
-def normalize_data(train_data, validation_data, test_data):
-    std_data = np.std(train_data, axis=0)
-    mean_data = np.mean(train_data, axis=0)
-    train_data = train_data - mean_data
-    train_data = train_data / std_data
-    validation_data = validation_data - mean_data
-    validation_data = validation_data / std_data
-    test_data = test_data - mean_data
-    test_data = test_data / std_data
-    return train_data, validation_data, test_data
+def normalize_data(data):
+    std_data = np.std(data, axis=0)
+    mean_data = np.mean(data, axis=0)
+    data = data - mean_data
+    data = data / std_data
+    return data
 
 def init_params(size, mean=0, std_dev=0.01):
     W = np.random.normal(mean, std_dev, size)
@@ -215,21 +211,24 @@ if __name__ == '__main__':
                 '../Datasets/cifar-10-batches-py/data_batch_5'
                 ]
 
-    # Extract the input and ouput data, as well as the one hot encoded output from each data set.
-    training_x, training_y, training_encoded = load_batch(datasets[1])
-    validation_x, validation_y, validation_encoded = load_batch(datasets[2])    
-    test_x, test_y, test_encoded = load_batch(datasets[test_idx])
 
-    # Normalize the data
-    training_x_norm, validation_x_norm, test_x_norm = normalize_data(training_x, validation_x, test_x)
-    # Number of hidden nodes
-    m = 50
-    # Generate weights and biases for the first layer
-    W1, b1 = init_params((m, training_x.shape[0]), std_dev=1/np.sqrt(training_x.shape[0]))
-    
-    # Generate weights and biases for the second layer
-    W2, b2 = init_params((10, m), std_dev=1/np.sqrt(m))
-    # Create lists containing the weights and biases
+    # Extract the input and ouput data, as well as the one hot encoded output from each data set.
+    if not run_ex_4:
+        training_x, training_y, training_encoded = load_batch(datasets[1])
+        validation_x, validation_y, validation_encoded = load_batch(datasets[2])    
+        test_x, test_y, test_encoded = load_batch(datasets[test_idx])
+
+        # Normalize the data
+        training_x_norm = normalize_data(training_x)
+        validation_x_norm = normalize_data(validation_x)
+        test_x_norm = normalize_data(test_x)
+        # Number of hidden nodes
+        m = 50
+        # Generate weights and biases for the first layer
+        W1, b1 = init_params((m, training_x.shape[0]), std_dev=1/np.sqrt(training_x.shape[0]))
+        
+        # Generate weights and biases for the second layer
+        W2, b2 = init_params((10, m), std_dev=1/np.sqrt(m))
 
     ### Testing gradient calculations ###
     if run_grad_test:
@@ -337,3 +336,132 @@ if __name__ == '__main__':
     if run_ex_4:
         n_s = 800
         cycles = 3
+        n_batch = 100
+        n_epochs = 32
+
+        training_x1, training_y1, training_encoded_1 = load_batch(datasets[1])
+        training_x2, training_y2, training_encoded_2 = load_batch(datasets[2])
+        training_x3, training_y3, training_encoded_3 = load_batch(datasets[3])
+        training_x4, training_y4, training_encoded_4 = load_batch(datasets[4])
+        training_x5, training_y5, training_encoded_5 = load_batch(datasets[5])    
+        test_x, test_y, test_encoded = load_batch(datasets[test_idx])
+
+        training_x = np.concatenate((training_x1, training_x2, training_x3, training_x4, training_x5), axis=1)
+        training_y = np.concatenate((training_y1, training_y2, training_y3, training_y4, training_y5), axis=0)
+        training_encoded = np.concatenate((training_encoded_1, training_encoded_2, training_encoded_3, training_encoded_4, training_encoded_5), axis=1)
+
+        validation_x = training_x[:,-5000:]
+        validation_encoded = training_encoded[:,-5000:]
+        validation_y = training_y[-5000:]
+        val_idx = np.arange(44999, 49999, 1)
+
+        training_x = np.delete(training_x, val_idx, axis=1)
+        training_encoded = np.delete(training_encoded, val_idx, axis=1)  
+        training_y = np.delete(training_y, val_idx, axis=0)
+        
+        # Normalize the data
+        training_x_norm = normalize_data(training_x)
+        validation_x_norm = normalize_data(validation_x)
+        test_x_norm = normalize_data(test_x)
+        
+        
+        # Number of hidden nodes
+        m = 50
+        # Generate weights and biases for the first layer
+        W1, b1 = init_params((m, training_x.shape[0]), std_dev=1/np.sqrt(training_x.shape[0]))
+        
+        # Generate weights and biases for the second layer
+        W2, b2 = init_params((training_encoded.shape[0], m), std_dev=1/np.sqrt(m))
+
+        run_first_search = False
+        run_second_search = False
+        run_third_search = False
+        run_forth_search = False
+        if run_first_search:
+            l_min = -5
+            l_max = -1
+            l = l_min + (l_max-l_min)*np.random.rand(10)
+            list_of_lambdas = 10**l
+            """
+                 Lambda  Accuracy
+                 0.000044    0.4486
+                 0.046993    0.4536                                  
+                 0.027695    0.4654                                                                            
+                 0.000055    0.4692 
+                 0.000020    0.4774 
+                 0.000697    0.4810        
+                 0.000594    0.4850    
+                 0.000121    0.4914      
+                 0.000253    0.4932               
+                 0.003422    0.4944 
+            """
+        elif run_second_search:
+            # Choosing the best performance obtained in the first run (lambda = 0.003422) and testing around that value
+            list_of_lambdas = [0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005]
+
+            """
+               Lambda  Accuracy
+               0.0020    0.5160
+               0.0025    0.5192
+               0.0030    0.5250
+               0.0040    0.5250
+               0.0035    0.5262
+               0.0045    0.5272
+               0.0050    0.5328
+            """
+        
+        elif run_third_search:
+            list_of_lambdas = [0.0045, 0.00475, 0.005, 0.00525, 0.0055, 0.00575, 0.006, 0.00625]
+
+            """
+            Lambda  Accuracy
+            0.00475    0.5250
+            0.00450    0.5254
+            0.00500    0.5262
+            0.00575    0.5268
+            0.00525    0.5276
+            0.00550    0.5280
+            0.00600    0.5332
+            0.00625    0.5338
+            """
+        
+        elif run_forth_search:
+            list_of_lambdas = [0.00625, 0.0065, 0.00675, 0.007, 0.00725, 0.0075, 0.00775, 0.008]
+
+            """
+            Lambda  Accuracy
+            0.00625    0.5186
+            0.00650    0.5228
+            0.00675    0.5272
+            0.00750    0.5274
+            0.00775    0.5278
+            0.00700    0.5284
+            0.00800    0.5308
+            0.00725    0.5320 
+            """
+
+        accuracies = pd.DataFrame({'Lambda':[], 'Accuracy':[]})
+        for lambda_val in list_of_lambdas:
+            _, _, _, _, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
+                                                                                                            training_encoded[:, :], 
+                                                                                                            training_y[:],
+                                                                                                            validation_x_norm[:, :],
+                                                                                                            validation_encoded[:, :],
+                                                                                                            validation_y[:],
+                                                                                                            n_batch=n_batch,
+                                                                                                            eta=1e-5,
+                                                                                                            n_epochs=n_epochs,
+                                                                                                            W1=W1,
+                                                                                                            W2=W2,
+                                                                                                            b1=b1,
+                                                                                                            b2=b2,
+                                                                                                            lambda_val=lambda_val,
+                                                                                                            eta_min=1e-5,
+                                                                                                            eta_max=1e-1,
+                                                                                                            n_s=n_s,
+                                                                                                            use_CLR=True
+                                                                                                            )
+            accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
+
+        accuracies.sort_values(['Accuracy'], inplace=True)
+        print(accuracies)
