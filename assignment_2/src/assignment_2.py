@@ -197,7 +197,8 @@ if __name__ == '__main__':
     run_grad_test = False
     run_sanity_check = False
     run_CLR_test = False
-    run_ex_4 = True
+    run_ex_4 = False
+    run_final_test = True
 
     # Index for test set in the list of data sets 
     test_idx = 0
@@ -232,6 +233,17 @@ if __name__ == '__main__':
 
     ### Testing gradient calculations ###
     if run_grad_test:
+        """
+        Output:
+        Grads test on W1 returned: True, with relative error: 4.724876676739617e-05 and denom: 47.678748314893035              
+        Grads test on W2 returned: True, with relative error: 4.779799141510413e-07 and denom: 2.925975628886696                
+        Grads test on b1 returned: True, with relative error: 2.2119807889667623e-06 and denom: 1.970798722821977               
+        Grads test on b2 returned: True, with relative error: 4.499112193947965e-06 and denom: 0.8364133132592686               
+        9.90981693884725e-07                                                                                                    
+        1.6335744885643762e-07                                                                                                  
+        1.1223778275030734e-06                                                                                                  
+        5.3790537795437325e-06
+        """
         grads_x = training_x_norm[:20,:10]
         grads_encoded = training_encoded[:,:10]
 
@@ -377,91 +389,163 @@ if __name__ == '__main__':
         run_second_search = False
         run_third_search = False
         run_forth_search = False
-        if run_first_search:
-            l_min = -5
-            l_max = -1
-            l = l_min + (l_max-l_min)*np.random.rand(10)
-            list_of_lambdas = 10**l
-            """
-                 Lambda  Accuracy
-                 0.000044    0.4486
-                 0.046993    0.4536                                  
-                 0.027695    0.4654                                                                            
-                 0.000055    0.4692 
-                 0.000020    0.4774 
-                 0.000697    0.4810        
-                 0.000594    0.4850    
-                 0.000121    0.4914      
-                 0.000253    0.4932               
-                 0.003422    0.4944 
-            """
-        elif run_second_search:
-            # Choosing the best performance obtained in the first run (lambda = 0.003422) and testing around that value
-            list_of_lambdas = [0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005]
 
-            """
-               Lambda  Accuracy
-               0.0020    0.5160
-               0.0025    0.5192
-               0.0030    0.5250
-               0.0040    0.5250
-               0.0035    0.5262
-               0.0045    0.5272
-               0.0050    0.5328
-            """
+        if not run_final_test:
+            if run_first_search:
+                l_min = -5
+                l_max = -1
+                l = l_min + (l_max-l_min)*np.random.rand(10)
+                list_of_lambdas = 10**l
+                """
+                    Lambda  Accuracy
+                    0.000044    0.4486
+                    0.046993    0.4536                                  
+                    0.027695    0.4654                                                                            
+                    0.000055    0.4692 
+                    0.000020    0.4774 
+                    0.000697    0.4810        
+                    0.000594    0.4850    
+                    0.000121    0.4914      
+                    0.000253    0.4932               
+                    0.003422    0.4944 
+                """
+            elif run_second_search:
+                # Choosing the best performance obtained in the first run (lambda = 0.003422) and testing around that value
+                list_of_lambdas = [0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005]
+
+                """
+                Lambda  Accuracy
+                0.0020    0.5160
+                0.0025    0.5192
+                0.0030    0.5250
+                0.0040    0.5250
+                0.0035    0.5262
+                0.0045    0.5272
+                0.0050    0.5328
+                """
+            
+            elif run_third_search:
+                list_of_lambdas = [0.0045, 0.00475, 0.005, 0.00525, 0.0055, 0.00575, 0.006, 0.00625]
+
+                """
+                Lambda  Accuracy
+                0.00475    0.5250
+                0.00450    0.5254
+                0.00500    0.5262
+                0.00575    0.5268
+                0.00525    0.5276
+                0.00550    0.5280
+                0.00600    0.5332
+                0.00625    0.5338
+                """
+            
+            elif run_forth_search:
+                list_of_lambdas = [0.00625, 0.0065, 0.00675, 0.007, 0.00725, 0.0075, 0.00775, 0.008]
+
+                """
+                Lambda  Accuracy
+                0.00625    0.5186
+                0.00650    0.5228
+                0.00675    0.5272
+                0.00750    0.5274
+                0.00775    0.5278
+                0.00700    0.5284
+                0.00800    0.5308
+                0.00725    0.5320 
+                """
+
+            accuracies = pd.DataFrame({'Lambda':[], 'Accuracy':[]})
+            for lambda_val in list_of_lambdas:
+                _, _, _, _, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
+                                                                                                                training_encoded[:, :], 
+                                                                                                                training_y[:],
+                                                                                                                validation_x_norm[:, :],
+                                                                                                                validation_encoded[:, :],
+                                                                                                                validation_y[:],
+                                                                                                                n_batch=n_batch,
+                                                                                                                eta=1e-5,
+                                                                                                                n_epochs=n_epochs,
+                                                                                                                W1=W1,
+                                                                                                                W2=W2,
+                                                                                                                b1=b1,
+                                                                                                                b2=b2,
+                                                                                                                lambda_val=lambda_val,
+                                                                                                                eta_min=1e-5,
+                                                                                                                eta_max=1e-1,
+                                                                                                                n_s=n_s,
+                                                                                                                use_CLR=True
+                                                                                                                )
+                accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
+
+            accuracies.sort_values(['Accuracy'], inplace=True)
+            print(accuracies)
+
+    elif run_final_test:
+        print('Running final test')
+        n_s = 800
+        cycles = 3
+        n_batch = 100
+        n_epochs = 48
+        lambda_val = 0.00625
+
+        training_x1, training_y1, training_encoded_1 = load_batch(datasets[1])
+        training_x2, training_y2, training_encoded_2 = load_batch(datasets[2])
+        training_x3, training_y3, training_encoded_3 = load_batch(datasets[3])
+        training_x4, training_y4, training_encoded_4 = load_batch(datasets[4])
+        training_x5, training_y5, training_encoded_5 = load_batch(datasets[5])    
+        test_x, test_y, test_encoded = load_batch(datasets[test_idx])
+
+        training_x = np.concatenate((training_x1, training_x2, training_x3, training_x4, training_x5), axis=1)
+        training_y = np.concatenate((training_y1, training_y2, training_y3, training_y4, training_y5), axis=0)
+        training_encoded = np.concatenate((training_encoded_1, training_encoded_2, training_encoded_3, training_encoded_4, training_encoded_5), axis=1)
+
+        validation_x = training_x[:,-1000:]
+        validation_encoded = training_encoded[:,-1000:]
+        validation_y = training_y[-1000:]
+        val_idx = np.arange(48999, 49999, 1)
+
+        training_x = np.delete(training_x, val_idx, axis=1)
+        training_encoded = np.delete(training_encoded, val_idx, axis=1)  
+        training_y = np.delete(training_y, val_idx, axis=0)
         
-        elif run_third_search:
-            list_of_lambdas = [0.0045, 0.00475, 0.005, 0.00525, 0.0055, 0.00575, 0.006, 0.00625]
-
-            """
-            Lambda  Accuracy
-            0.00475    0.5250
-            0.00450    0.5254
-            0.00500    0.5262
-            0.00575    0.5268
-            0.00525    0.5276
-            0.00550    0.5280
-            0.00600    0.5332
-            0.00625    0.5338
-            """
-        
-        elif run_forth_search:
-            list_of_lambdas = [0.00625, 0.0065, 0.00675, 0.007, 0.00725, 0.0075, 0.00775, 0.008]
-
-            """
-            Lambda  Accuracy
-            0.00625    0.5186
-            0.00650    0.5228
-            0.00675    0.5272
-            0.00750    0.5274
-            0.00775    0.5278
-            0.00700    0.5284
-            0.00800    0.5308
-            0.00725    0.5320 
-            """
+        # Normalize the data
+        training_x_norm = normalize_data(training_x)
+        validation_x_norm = normalize_data(validation_x)
+        test_x_norm = normalize_data(test_x)
 
         accuracies = pd.DataFrame({'Lambda':[], 'Accuracy':[]})
-        for lambda_val in list_of_lambdas:
-            _, _, _, _, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
-                                                                                                            training_encoded[:, :], 
-                                                                                                            training_y[:],
-                                                                                                            validation_x_norm[:, :],
-                                                                                                            validation_encoded[:, :],
-                                                                                                            validation_y[:],
-                                                                                                            n_batch=n_batch,
-                                                                                                            eta=1e-5,
-                                                                                                            n_epochs=n_epochs,
-                                                                                                            W1=W1,
-                                                                                                            W2=W2,
-                                                                                                            b1=b1,
-                                                                                                            b2=b2,
-                                                                                                            lambda_val=lambda_val,
-                                                                                                            eta_min=1e-5,
-                                                                                                            eta_max=1e-1,
-                                                                                                            n_s=n_s,
-                                                                                                            use_CLR=True
-                                                                                                            )
-            accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
+        W1, W2, b1, b2, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
+                                                                                                        training_encoded[:, :], 
+                                                                                                        training_y[:],
+                                                                                                        validation_x_norm[:, :],
+                                                                                                        validation_encoded[:, :],
+                                                                                                        validation_y[:],
+                                                                                                        n_batch=n_batch,
+                                                                                                        eta=1e-5,
+                                                                                                        n_epochs=n_epochs,
+                                                                                                        W1=W1,
+                                                                                                        W2=W2,
+                                                                                                        b1=b1,
+                                                                                                        b2=b2,
+                                                                                                        lambda_val=lambda_val,
+                                                                                                        eta_min=1e-5,
+                                                                                                        eta_max=1e-1,
+                                                                                                        n_s=n_s,
+                                                                                                        use_CLR=True
+                                                                                                        )
+        accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
 
-        accuracies.sort_values(['Accuracy'], inplace=True)
-        print(accuracies)
+        plot_training_validation(training_accuracy, 
+                                        validation_accuracy, 
+                                        plot_accuracy=True,
+                                        save_file=True,
+                                        file_name='Final_test_acc.png')
+        
+        plot_training_validation(training_loss, 
+                                            validation_loss, 
+                                            plot_accuracy=False,
+                                            save_file=True,
+                                            file_name='Final_test_val.png')
+
+        test_acc = compute_accuracy(test_x_norm, test_y, W1, W2, b1, b2)
+        print('The test accuracy from the final test is: {}'.format(test_acc))
