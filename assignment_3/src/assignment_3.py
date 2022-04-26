@@ -125,12 +125,10 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W1, W
     validation_accuracy = []
     validation_loss = []
     eta_evolution = []
-    k_list1 = list(range(0, n_s, 1))
-    k_list2 = list(range(n_s, 0, -1))
-    k_list = np.concatenate([k_list1, k_list2], axis=0)
-    cycle_idx = 0
+    k_list = list(range(0, total_length, n_batch))
 
     for epoch in tqdm(range(n_epochs)):
+        
         # From 0 to the total length of the data set. n_batch makes "batch" increase by n_batch (batch size) for each iteration.
         for batch in range(0, total_length, n_batch):
             max_batch_idx = batch+n_batch
@@ -147,15 +145,13 @@ def gradient_descent(X, Y, y, X_val, Y_val, y_val, n_batch, eta, n_epochs, W1, W
 
             """ CLR """
             if use_CLR:
-                t = k_list[cycle_idx]
-                
-                cycle_idx += 1
-                if cycle_idx >= len(k_list):
-                    cycle_idx = 0
+                t = k_list.index(batch) + (epoch*n_batch)
                 eta = CLR(t, eta_min, eta_max, n_s)
                 eta_evolution.append(eta)
 
-        """ Step decay """
+                pass
+
+        """ Weight decay """
         if epoch%10 == 0 and epoch!=0 and step_decay:
             eta = .1*eta
             eta_min = .1*eta_min
@@ -218,7 +214,7 @@ if __name__ == '__main__':
 
 
     # Extract the input and ouput data, as well as the one hot encoded output from each data set.
-    if not run_ex_4 or not run_final_test:
+    if not run_ex_4:
         training_x, training_y, training_encoded = load_batch(datasets[1])
         validation_x, validation_y, validation_encoded = load_batch(datasets[2])    
         test_x, test_y, test_encoded = load_batch(datasets[test_idx])
@@ -344,12 +340,17 @@ if __name__ == '__main__':
 
         plt.plot(eta_evolution, color='blue', label='ETA over time')
         plt.legend()
-        plt.xlabel("Epochs steps")
+        plt.xlabel("Update steps")
         plt.ylabel('ETA')
         plt.savefig('CLR_ETA.png')
         plt.show()
     
     if run_ex_4:
+        n_s = 800
+        cycles = 3
+        n_batch = 100
+        n_epochs = 32
+
         training_x1, training_y1, training_encoded_1 = load_batch(datasets[1])
         training_x2, training_y2, training_encoded_2 = load_batch(datasets[2])
         training_x3, training_y3, training_encoded_3 = load_batch(datasets[3])
@@ -375,24 +376,16 @@ if __name__ == '__main__':
         validation_x_norm = normalize_data(validation_x)
         test_x_norm = normalize_data(test_x)
         
-        data_set_size = training_x_norm.shape[1]
-        cycles = 3
-        n_batch = 100
-        batch_per_epoch = data_set_size/n_batch
-        n_s = 2*math.floor(batch_per_epoch)
-        updates_per_epoch = 2*n_s
-        desired_updates = cycles*updates_per_epoch
-        n_epochs = int(desired_updates*n_batch/data_set_size)
         
         # Number of hidden nodes
         m = 50
         # Generate weights and biases for the first layer
-        W1, b1 = init_params((m, training_x.shape[0]), std_dev=1/np.sqrt(training_x_norm.shape[0]))
+        W1, b1 = init_params((m, training_x.shape[0]), std_dev=1/np.sqrt(training_x.shape[0]))
         
         # Generate weights and biases for the second layer
         W2, b2 = init_params((training_encoded.shape[0], m), std_dev=1/np.sqrt(m))
 
-        run_first_search = True
+        run_first_search = False
         run_second_search = False
         run_third_search = False
         run_forth_search = False
@@ -401,53 +394,53 @@ if __name__ == '__main__':
             if run_first_search:
                 l_min = -5
                 l_max = -1
-                l = l_min + (l_max-l_min)*np.random.rand(20)
+                l = l_min + (l_max-l_min)*np.random.rand(10)
                 list_of_lambdas = 10**l
                 """
-                        Lambda  Accuracy
-                        0.053832    0.4558
-                        0.000135    0.4782
-                        0.000037    0.4816
-                        0.019669    0.4912
-                        0.000417    0.4946
-                        0.000269    0.4962
-                        0.000659    0.5018
-                        0.000751    0.5032
-                        0.000047    0.5088
-                        0.001170    0.5182
+                    Lambda  Accuracy
+                    0.000044    0.4486
+                    0.046993    0.4536                                  
+                    0.027695    0.4654                                                                            
+                    0.000055    0.4692 
+                    0.000020    0.4774 
+                    0.000697    0.4810        
+                    0.000594    0.4850    
+                    0.000121    0.4914      
+                    0.000253    0.4932               
+                    0.003422    0.4944 
                 """
             elif run_second_search:
-                # Choosing the best performance obtained in the first run (lambda = 0.001170) and testing around that value
-                list_of_lambdas = [0.0005, 0.0075, 0.001, 0.00125, 0.00150, 0.00175]
+                # Choosing the best performance obtained in the first run (lambda = 0.003422) and testing around that value
+                list_of_lambdas = [0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005]
 
                 """
                 Lambda  Accuracy
-                0.00050    0.5068
-                0.00175    0.5084
-                0.00150    0.5096
-                0.00750    0.5132
-                0.00125    0.5132
-                0.00100    0.5170
+                0.0020    0.5160
+                0.0025    0.5192
+                0.0030    0.5250
+                0.0040    0.5250
+                0.0035    0.5262
+                0.0045    0.5272
+                0.0050    0.5328
                 """
             
             elif run_third_search:
-                list_of_lambdas = [0.0008, 0.00085, 0.0009, 0.00095, 0.001, 0.00105, 0.0011, 0.00115, 0.0012]
+                list_of_lambdas = [0.0045, 0.00475, 0.005, 0.00525, 0.0055, 0.00575, 0.006, 0.00625]
 
                 """
-                    Lambda  Accuracy
-                    0.00120    0.5016
-                    0.00115    0.5018
-                    0.00100    0.5034
-                    0.00095    0.5036
-                    0.00110    0.5036
-                    0.00105    0.5042
-                    0.00080    0.5066
-                    0.00090    0.5090
-                    0.00085    0.5130
+                Lambda  Accuracy
+                0.00475    0.5250
+                0.00450    0.5254
+                0.00500    0.5262
+                0.00575    0.5268
+                0.00525    0.5276
+                0.00550    0.5280
+                0.00600    0.5332
+                0.00625    0.5338
                 """
             
             elif run_forth_search:
-                list_of_lambdas = [0.00625]#, 0.0065, 0.00675, 0.007, 0.00725, 0.0075, 0.00775, 0.008]
+                list_of_lambdas = [0.00625, 0.0065, 0.00675, 0.007, 0.00725, 0.0075, 0.00775, 0.008]
 
                 """
                 Lambda  Accuracy
@@ -463,7 +456,7 @@ if __name__ == '__main__':
 
             accuracies = pd.DataFrame({'Lambda':[], 'Accuracy':[]})
             for lambda_val in list_of_lambdas:
-                _, _, _, _, training_accuracy, training_loss, validation_accuracy, validation_loss, eta_evolution = gradient_descent(training_x_norm[:, :],
+                _, _, _, _, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
                                                                                                                 training_encoded[:, :], 
                                                                                                                 training_y[:],
                                                                                                                 validation_x_norm[:, :],
@@ -483,17 +476,17 @@ if __name__ == '__main__':
                                                                                                                 use_CLR=True
                                                                                                                 )
                 accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
-                """plt.plot(eta_evolution, color='blue', label='ETA over time')
-                plt.legend()
-                plt.xlabel("Epochs steps")
-                plt.ylabel('ETA')
-                plt.savefig('CLR_ETA.png')
-                plt.show()"""
 
             accuracies.sort_values(['Accuracy'], inplace=True)
             print(accuracies)
 
     elif run_final_test:
+        print('Running final test')
+        n_s = 800
+        cycles = 3
+        n_batch = 100
+        n_epochs = 48
+        lambda_val = 0.00625
 
         training_x1, training_y1, training_encoded_1 = load_batch(datasets[1])
         training_x2, training_y2, training_encoded_2 = load_batch(datasets[2])
@@ -520,23 +513,13 @@ if __name__ == '__main__':
         validation_x_norm = normalize_data(validation_x)
         test_x_norm = normalize_data(test_x)
 
-        data_set_size = training_x_norm.shape[1]
-        cycles = 3
-        n_batch = 100
-        batch_per_epoch = data_set_size/n_batch
-        n_s = 2*math.floor(batch_per_epoch)
-        updates_per_epoch = 2*n_s
-        desired_updates = cycles*updates_per_epoch
-        n_epochs = int(desired_updates*n_batch/data_set_size)
-        lambda_val = 0.00085
-
         accuracies = pd.DataFrame({'Lambda':[], 'Accuracy':[]})
-        W1, W2, b1, b2, training_accuracy, training_loss, validation_accuracy, validation_loss, eta_evolution = gradient_descent(training_x_norm,
-                                                                                                        training_encoded, 
-                                                                                                        training_y,
-                                                                                                        validation_x_norm,
-                                                                                                        validation_encoded,
-                                                                                                        validation_y,
+        W1, W2, b1, b2, training_accuracy, training_loss, validation_accuracy, validation_loss, _ = gradient_descent(training_x_norm[:, :],
+                                                                                                        training_encoded[:, :], 
+                                                                                                        training_y[:],
+                                                                                                        validation_x_norm[:, :],
+                                                                                                        validation_encoded[:, :],
+                                                                                                        validation_y[:],
                                                                                                         n_batch=n_batch,
                                                                                                         eta=1e-5,
                                                                                                         n_epochs=n_epochs,
@@ -548,8 +531,7 @@ if __name__ == '__main__':
                                                                                                         eta_min=1e-5,
                                                                                                         eta_max=1e-1,
                                                                                                         n_s=n_s,
-                                                                                                        use_CLR=True,
-                                                                                                        step_decay=False
+                                                                                                        use_CLR=True
                                                                                                         )
         accuracies = accuracies.append({'Lambda': lambda_val, 'Accuracy':max(validation_accuracy)}, ignore_index=True)
 
@@ -564,12 +546,6 @@ if __name__ == '__main__':
                                             plot_accuracy=False,
                                             save_file=True,
                                             file_name='Final_test_val.png')
-        
-        plt.plot(eta_evolution, color='blue', label='ETA over time')
-        plt.legend()
-        plt.xlabel("Epochs steps")
-        plt.ylabel('ETA')
-        plt.savefig('CLR_ETA.png')
-        plt.show()
+
         test_acc = compute_accuracy(test_x_norm, test_y, W1, W2, b1, b2)
         print('The test accuracy from the final test is: {}'.format(test_acc))
